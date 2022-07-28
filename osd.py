@@ -1,3 +1,5 @@
+import os
+
 class parm:
     def __init__(
             self, 
@@ -11,8 +13,8 @@ class parm:
         self.min_val = min_val
         self.max_val = max_val
 
-# TODO: add key parameter to parms
-parms_dict = [
+# will use number entered as index
+parms_list = [
         parm("CONTRAST", 0x00, 0xB5, 0xFF),
         parm("RED DRIVE", 0x01, 0x00, 0xFF),
         parm("GREEN DRIVE", 0x02, 0x00, 0xFF),
@@ -34,17 +36,39 @@ parms_dict = [
         parm("ROTATION", 0x12, 0x00, 0x7F),
     ]
 
+def default_config_generator(parms_list):
+    for parm in parms_list:
+        yield (parm.name, 0)
+
 # TODO: add modal loops
 # main loop & parm loop
-def mainloop():
-    cmd = input()
-    print(cmd + "\n")
+def main_loop():
 
-def mod_parm(parm: int, mod_key: str):
+    user_config = {parm: value for parm, value in default_config_generator(parms_list)}
+
+    entered_key = '';
+    while (entered_key != 'q'):
+        for i, parm in enumerate(parms_list):
+            print(i, parm.name);
+        entered_key = input("... ")
+        # TODO convert in set to chars
+        if (entered_key in range(len(parms_list))):
+            print("in")
+            mod_parm_loop(entered_key)
+        os.system('clear');
+
     return
 
-while(True):
-    mainloop()
+def mod_parm_loop(parm: int):
+    mod_key = '';
+    while (mod_key != 'q'):
+        print
+    return
+
+def mod_parm_mode(parm: int, mod_key: str):
+    return
+
+main_loop()
 
 # TODO
 # mainloop: if get valid key e.g. "1" for contrast 
