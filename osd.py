@@ -36,6 +36,8 @@ parms_list = [
         parm("ROTATION", 0x12, 0x00, 0x7F),
     ]
 
+user_config = {}
+
 def default_config_generator(parms_list):
     for parm in parms_list:
         yield (parm.name, 0)
@@ -43,32 +45,53 @@ def default_config_generator(parms_list):
 # TODO: add modal loops
 # main loop & parm loop
 def main_loop():
-
+    global user_config
     user_config = {parm: value for parm, value in default_config_generator(parms_list)}
-
     entered_key = '';
+
     while (entered_key != 'q'):
         for i, parm in enumerate(parms_list):
             print(i, parm.name);
         entered_key = input("... ")
-        # TODO convert in set to chars
+        if (entered_key.isdecimal()):
+            entered_key = int(entered_key)
         if (entered_key in range(len(parms_list))):
-            print("in")
             mod_parm_loop(entered_key)
+
+        print(user_config)
         os.system('clear');
 
     return
 
-def mod_parm_loop(parm: int):
+def mod_parm_loop(parm_number: int):
+    global user_config
+    os.system('clear')
+    parm = parms_list[parm_number]
+    parm_value = user_config[parm.name]
     mod_key = '';
+
     while (mod_key != 'q'):
-        print
+        # print("Currently modifiying:")
+        print(parm_number, '|', parm.name, '| MIN', parm.min_val, '| MAX', parm.max_val)
+        print("CURRENT VALUE:", parm_value)
+        mod_key = input("... ")
+        if (mod_key == '+'): parm_value+=1
+        if (mod_key == '-'): parm_value-=1
+        if (mod_key.isdecimal()): 
+            int_mod_key = int(mod_key)
+            if (int_mod_key >= parm.min_val and  int_mod_key <= parm.max_val):
+                parm_value = int(mod_key)
+            else:
+                print("VALUE OUT OF BOUNDS")
+                input()
+        os.system('clear')
     return
 
 def mod_parm_mode(parm: int, mod_key: str):
     return
 
-main_loop()
+if __name__ == "__main__":
+    main_loop()
 
 # TODO
 # mainloop: if get valid key e.g. "1" for contrast 
