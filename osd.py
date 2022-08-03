@@ -36,62 +36,91 @@ parms_list = [
         parm("ROTATION", 0x12, 0x00, 0x7F),
     ]
 
-user_config = {}
+user_config = {
+    "CONTRAST":            0xFA,
+    "RED DRIVE":           0x93,
+    "GREEN DRIVE":         0x93,
+    "BLUE DRIVE":          0x8F,
+    "RED CUTOFF":          0x90,
+    "GREEN CUTOFF":        0x8B,
+    "BLUE CUTOFF":         0x6D,
+    "HORIZONTAL POSITION": 0x8C,
+    "HEIGHT":              0xDC,
+    "VERTICAL POSITION":   0x49,
+    "S CORRECTION":        0x92,
+    "KEYSTONE":            0xA2,
+    "PINCUSHION":          0xBF,
+    "WIDTH":               0x71,
+    "PINCUSHION BALANCE":  0xC2,
+    "PARALELLOGRAM":       0xD2,
+    "BRIGHTNESS DRIVE":    0x40,
+    "BRIGHTNESS":          0x09,
+    "ROTATION":            0x27
+}
 
-def default_config_generator(parms_list):
-    for parm in parms_list:
-        yield (parm.name, 0)
+def run():
+    """ 
+    Run the main CLI config loop.
 
-# TODO: add modal loops
-# main loop & parm loop
-def main_loop():
-    global user_config
-    user_config = {parm: value for parm, value in default_config_generator(parms_list)}
+    Implicitly makes changes to the user config attached to the crrent process.
+    """
     entered_key = '';
 
     while (entered_key != 'q'):
+        os.system('clear');
         for i, parm in enumerate(parms_list):
             print(i, parm.name);
         entered_key = input("... ")
         if (entered_key.isdecimal()):
-            entered_key = int(entered_key)
-        if (entered_key in range(len(parms_list))):
-            mod_parm_loop(entered_key)
+            entered_key_int = int(entered_key)
+            if (entered_key_int in range(len(parms_list))):
+                mod_parm_loop(entered_key_int)
 
         print(user_config)
-        os.system('clear');
 
-    return
-
-def mod_parm_loop(parm_number: int):
-    global user_config
-    os.system('clear')
-    parm = parms_list[parm_number]
-    parm_value = user_config[parm.name]
+# TODO: make this take a list of parms
+# and modify all of them in parallel
+def mod_parm_loop(parm_number):
+    """Run an interective configuration on parameter at parm_number."""
+    parm_info = parms_list[parm_number]
     mod_key = '';
 
     while (mod_key != 'q'):
-        # print("Currently modifiying:")
-        print(parm_number, '|', parm.name, '| MIN', parm.min_val, '| MAX', parm.max_val)
-        print("CURRENT VALUE:", parm_value)
-        mod_key = input("... ")
-        if (mod_key == '+'): parm_value+=1
-        if (mod_key == '-'): parm_value-=1
-        if (mod_key.isdecimal()): 
-            int_mod_key = int(mod_key)
-            if (int_mod_key >= parm.min_val and  int_mod_key <= parm.max_val):
-                parm_value = int(mod_key)
-            else:
-                print("VALUE OUT OF BOUNDS")
-                input()
         os.system('clear')
-    return
+        # print("Currently modifiying:")
+        print(parm_number, '|', parm_info.name, '| MIN', parm_info.min_val, '| MAX', parm_info.max_val)
+        print("CURRENT VALUE:", user_config[parm_info.name])
+        mod_key = input("... ")
+        mod_parm(parm_info, mod_key)
 
-def mod_parm_mode(parm: int, mod_key: str):
-    return
+def mod_parm(parm_info, mod):
+    """
+    Apply the modifier to the given parameter.
+
+        Arguments:
+            parm_info (class Parm): The paramter to be modified 
+            modifier (string): The modifier to be applied to the user conifg
+                paramter that corresponds to parm_info. 
+
+        Returns:
+            Nothing for now.
+    """
+    if mod == '+':
+        user_config[parm_info.name] += 1
+    elif mod == '-':
+        user_config[parm_info.name] -= 1
+    elif mod.isdecimal():
+        mod_int = int(mod)
+        if(mod_int >= parm_info.min_val and mod_int <= parm_info.max_val):
+            user_config[parm_info.name] = mod_int
+        else:
+            print("VALUE OUT OF BOUNDS")
+            input()
 
 if __name__ == "__main__":
-    main_loop()
+    # TODO: Add logic for loading in config from script call
+    os.system('clear');
+    run()
 
 # TODO
 # mainloop: if get valid key e.g. "1" for contrast 
