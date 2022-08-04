@@ -1,4 +1,14 @@
 import os
+import RPi.GPIO as GPIO
+from smbus import SMBus
+bus = SMBus(1)
+
+def write_to_ivad(address, msg_1, msg_2):
+    bus.write_byte_data(address, msg_1, msg_2)
+
+def apply_config():
+    for parm in parms_list:
+        write_to_ivad(0x46, parm.offset, user_config[parm.name])
 
 class parm:
     def __init__(
@@ -69,12 +79,18 @@ def run():
     while (entered_key != 'q'):
         os.system('clear');
         for i, parm in enumerate(parms_list):
-            print(i, parm.name);
+            print(str(i) + ":", parm.name);
+        print()
+        print("A: APPLY CONIFG")
+        print("L: {name}: LOAD CONFIG")
+        print("S: {name}: SAVE CONFIG")
         entered_key = input("... ")
         if (entered_key.isdecimal()):
             entered_key_int = int(entered_key)
             if (entered_key_int in range(len(parms_list))):
                 mod_parm_loop(entered_key_int)
+        else:
+            setting_handler(entered_key)
 
         print(user_config)
 
@@ -91,9 +107,19 @@ def mod_parm_loop(parm_number):
         print(parm_number, '|', parm_info.name, '| MIN', parm_info.min_val, '| MAX', parm_info.max_val)
         print("CURRENT VALUE:", user_config[parm_info.name])
         mod_key = input("... ")
-        mod_parm(parm_info, mod_key)
+        mod_handler(parm_info, mod_key)
 
-def mod_parm(parm_info, mod):
+def setting_handler(setting, option = None):
+    if setting == 'A':
+        apply_config()
+    elif setting == 'L':
+        # load config from file
+        pass
+    elif setting == 'S':
+        # save config
+        pass
+
+def mod_handler(parm_info, mod):
     """
     Apply the modifier to the given parameter.
 
