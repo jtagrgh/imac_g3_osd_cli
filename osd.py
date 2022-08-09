@@ -1,3 +1,12 @@
+"""
+TODO:
+ - In process config loading
+ - Command line config loading
+ - Config save
+ - Hot reload
+ - Multi mod input
+"""
+
 import os
 import RPi.GPIO as GPIO
 from smbus import SMBus
@@ -68,7 +77,9 @@ user_config = {
     "ROTATION":            0x27
 }
 
-def run():
+hot_reload = False
+
+def main_loop():
     """ 
     Run the main CLI config loop.
 
@@ -82,8 +93,9 @@ def run():
             print(str(i) + ":", parm.name);
         print()
         print("A: APPLY CONIFG")
-        print("L: {name}: LOAD CONFIG")
-        print("S: {name}: SAVE CONFIG")
+        print("R: TOGGLE HOT RELOAD", "ON" if hot_reload else "OFF")
+        print("L {name}: LOAD CONFIG")
+        print("S {name}: SAVE CONFIG")
         entered_key = input("... ")
         if (entered_key.isdecimal()):
             entered_key_int = int(entered_key)
@@ -94,8 +106,6 @@ def run():
 
         print(user_config)
 
-# TODO: make this take a list of parms
-# and modify all of them in parallel
 def mod_parm_loop(parm_number):
     """Run an interective configuration on parameter at parm_number."""
     parm_info = parms_list[parm_number]
@@ -108,10 +118,15 @@ def mod_parm_loop(parm_number):
         print("CURRENT VALUE:", user_config[parm_info.name])
         mod_key = input("... ")
         mod_handler(parm_info, mod_key)
+        if (hot_reload): apply_config()
 
 def setting_handler(setting, option = None):
+    """Enact the requested setting with an optional option."""
     if setting == 'A':
         apply_config()
+    elif setting == 'R':
+        global hot_reload
+        hot_reload = not hot_reload
     elif setting == 'L':
         # load config from file
         pass
@@ -146,7 +161,7 @@ def mod_handler(parm_info, mod):
 if __name__ == "__main__":
     # TODO: Add logic for loading in config from script call
     os.system('clear');
-    run()
+    main_loop()
 
 # TODO
 # mainloop: if get valid key e.g. "1" for contrast 
