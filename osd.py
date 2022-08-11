@@ -1,13 +1,18 @@
 """
 TODO:
- - In process config loading
  - Command line config loading
- - Config save
- - Hot reload
  - Multi mod input
+ - Think about using OOP for base operation class,
+   then settings have to register into a list
+   => only need to define accepted settings /parms once
+   Maybe have handler base <= ---handler [list] <>-- action (overide what to do with parm) => base actions
+   Just thoughts
+ - Tab completion for load / save?
+ - Clean up console printing
 """
 
 import os
+import json
 import RPi.GPIO as GPIO
 from smbus import SMBus
 bus = SMBus(1)
@@ -45,9 +50,9 @@ parms_list = [
         parm("HEIGHT", 0x08, 0x80, 0xFF),
         parm("VERTICAL POSITION", 0x09, 0x00, 0x7F),
         parm("S CORRECTION", 0x0A, 0x80, 0xFF),
-        parm("KEYSTONE", 0x0B, 0x80, 0xFF),
+        parm("KEYSTONE", 0x0B, 0x00, 0xFF),
         parm("PINCUSHION", 0x0C, 0x80, 0xFF),
-        parm("WIDTH", 0x0D, 0x80, 0x7F),
+        parm("WIDTH", 0x0D, 0x00, 0x7F),
         parm("PINCUSHION BALANCE", 0x0E, 0x80, 0xFF),
         parm("PARALELLOGRAM", 0x0F, 0x80, 0xFF),
         parm("BRIGHTNESS DRIVE", 0x10, 0x00, 0x40),
@@ -96,15 +101,15 @@ def main_loop():
         print("R: TOGGLE HOT RELOAD", "ON" if hot_reload else "OFF")
         print("L {name}: LOAD CONFIG")
         print("S {name}: SAVE CONFIG")
+        print("q: QUIT")
         entered_key = input("... ")
         if (entered_key.isdecimal()):
             entered_key_int = int(entered_key)
             if (entered_key_int in range(len(parms_list))):
                 mod_parm_loop(entered_key_int)
         else:
-            setting_handler(entered_key)
-
-        print(user_config)
+            entered_keys_list = entered_key.split()
+            setting_handler(entered_keys_list)
 
 def mod_parm_loop(parm_number):
     """Run an interective configuration on parameter at parm_number."""
@@ -120,19 +125,36 @@ def mod_parm_loop(parm_number):
         mod_handler(parm_info, mod_key)
         if (hot_reload): apply_config()
 
-def setting_handler(setting, option = None):
+def setting_handler(settings):
     """Enact the requested setting with an optional option."""
-    if setting == 'A':
+    if settings[0] == 'A':
         apply_config()
-    elif setting == 'R':
+    elif settings[0] == 'R':
         global hot_reload
         hot_reload = not hot_reload
-    elif setting == 'L':
-        # load config from file
-        pass
-    elif setting == 'S':
-        # save config
-        pass
+    elif settings[0] == 'L':
+        if len(settings) < 2:
+            print("MUST PASS {name} ARUGMENT")
+            input()
+        else:
+            global user_config
+            try:
+                with open(settings[1], 'r') as load_file:
+                    user_config = json.load(load_file)
+                print("LOADED!")
+                input()
+            except FileNotFoundError:
+                print("FILE NOT FOUND")
+                input()
+    elif settings[0] == 'S':
+        if len(settings) < 2:
+            print("MUST PASS {name} ARUGMENT")
+            input()
+        else:
+            with open(settings[1], 'w') as save_file:
+                save_file.write(json.dumps(user_config))
+            print("SAVED!")
+            input()
 
 def mod_handler(parm_info, mod):
     """
@@ -159,14 +181,5 @@ def mod_handler(parm_info, mod):
             input()
 
 if __name__ == "__main__":
-    # TODO: Add logic for loading in config from script call
     os.system('clear');
     main_loop()
-
-# TODO
-# mainloop: if get valid key e.g. "1" for contrast 
-#  -> parm_loop(parm): if get valid key e.g. "+", parm.increment() -> mod state
-#
-#
-#
-#
