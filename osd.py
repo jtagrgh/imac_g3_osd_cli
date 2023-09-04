@@ -1,3 +1,4 @@
+#!/usr/bin/python
 """
 TODO:
  - Command line config loading
@@ -23,7 +24,6 @@ def write_to_ivad(address, msg_1, msg_2):
 def apply_config():
     for parm in parms_list:
         write_to_ivad(0x46, parm.offset, user_config[parm.name])
-
 class parm:
     def __init__(
             self, 
@@ -180,6 +180,7 @@ def mod_handler(parm_info, mod):
             print("VALUE OUT OF BOUNDS")
             input()
 
+    apply_config()
 if __name__ == "__main__":
     os.system('clear');
     main_loop()
