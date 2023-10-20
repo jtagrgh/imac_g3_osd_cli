@@ -1,3 +1,4 @@
+#!/usr/bin/python
 """
 TODO:
  - Command line config loading
@@ -15,7 +16,14 @@ import os
 import json
 import RPi.GPIO as GPIO
 from smbus import SMBus
+import sys
 bus = SMBus(1)
+
+def turn_crt_on():
+    write_to_ivad(0x46, 0x00, 0x00)
+    write_to_ivad(0x46, 0x13, 0x0A)
+    write_to_ivad(0x46, 0x00, 0xFA)
+    
 
 def write_to_ivad(address, msg_1, msg_2):
     bus.write_byte_data(address, msg_1, msg_2)
@@ -23,7 +31,6 @@ def write_to_ivad(address, msg_1, msg_2):
 def apply_config():
     for parm in parms_list:
         write_to_ivad(0x46, parm.offset, user_config[parm.name])
-
 class parm:
     def __init__(
             self, 
@@ -83,6 +90,9 @@ user_config = {
 }
 
 hot_reload = False
+argLoaded = False
+fileLoaded = False
+loadedFileName = ""
 
 def main_loop():
     """ 
@@ -90,19 +100,23 @@ def main_loop():
 
     Implicitly makes changes to the user config attached to the crrent process.
     """
+    
+    global argLoaded
+    global fileLoaded
+    global loadedFileName
+    argLoaded = False
+    fileLoaded = False
+    loadedFileName = ""
+
     entered_key = '';
+    
+    if len(sys.argv) == 3:
+        loadedFileName = sys.argv[2]
+        entered_key = sys.argv[1] + ' ' + loadedFileName;
+        argLoaded = True
+        #fileLoaded = True
 
     while (entered_key != 'q'):
-        os.system('clear');
-        for i, parm in enumerate(parms_list):
-            print(str(i) + ":", parm.name);
-        print()
-        print("A: APPLY CONIFG")
-        print("R: TOGGLE HOT RELOAD", "ON" if hot_reload else "OFF")
-        print("L {name}: LOAD CONFIG")
-        print("S {name}: SAVE CONFIG")
-        print("q: QUIT")
-        entered_key = input("... ")
         if (entered_key.isdecimal()):
             entered_key_int = int(entered_key)
             if (entered_key_int in range(len(parms_list))):
@@ -110,6 +124,24 @@ def main_loop():
         else:
             entered_keys_list = entered_key.split()
             setting_handler(entered_keys_list)
+                    
+        os.system('clear');
+        for i, parm in enumerate(parms_list):
+            print(str(i) + ":", parm.name);
+        print()
+        print("O: TURN CRT ON")
+        print()        
+        print("A: APPLY CONIFG")
+        print("R: TOGGLE HOT RELOAD", "ON" if hot_reload else "OFF")
+        print("L {name}: LOAD CONFIG FROM A SEPERATE FILE")
+        print("S {name}: SAVE CONFIG TO A SEPERATE FILE")
+
+        if fileLoaded:
+            print("W: SAVE LOADED FILE")
+        print() 
+        print("q: QUIT")
+        entered_key = input("... ")
+
 
 def mod_parm_loop(parm_number):
     """Run an interective configuration on parameter at parm_number."""
@@ -127,8 +159,16 @@ def mod_parm_loop(parm_number):
 
 def setting_handler(settings):
     """Enact the requested setting with an optional option."""
+    global fileLoaded
+    global loadedFileName
+    #prevent index out of bounds error
+    if len(settings) < 1:
+        return
+        
     if settings[0] == 'A':
         apply_config()
+    elif settings[0] == 'O':
+        turn_crt_on()
     elif settings[0] == 'R':
         global hot_reload
         hot_reload = not hot_reload
@@ -155,7 +195,37 @@ def setting_handler(settings):
                 save_file.write(json.dumps(user_config))
             print("SAVED!")
             input()
+    
+    elif settings[0] == 'E':
+        try:
+            with open(loadedFileName, 'r') as load_file:
+                user_config = json.load(load_file)
+                fileLoaded = True
+                apply_config()
 
+        except FileNotFoundError:
+            sys.exit() 
+
+
+    elif settings[0] == 'W':
+        with open(loadedFileName, 'w') as save_file:
+            save_file.write(json.dumps(user_config))
+            print("File saved")
+            input()
+
+
+    elif settings[0] == 'I':
+        if len(settings) < 2:
+            sys.exit()
+        else:
+            try:
+                with open(loadedFileName, 'r') as load_file:
+                    user_config = json.load(load_file)
+                    turn_crt_on()
+                    apply_config()
+                    sys.exit()
+            except FileNotFoundError:
+                sys.exit()            
 def mod_handler(parm_info, mod):
     """
     Apply the modifier to the given parameter.
@@ -180,6 +250,7 @@ def mod_handler(parm_info, mod):
             print("VALUE OUT OF BOUNDS")
             input()
 
+    apply_config()
 if __name__ == "__main__":
     os.system('clear');
     main_loop()

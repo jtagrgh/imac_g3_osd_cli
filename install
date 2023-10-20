@@ -1,0 +1,31 @@
+#!/bin/bash
+
+if [[ $EUID -ne 0 ]]; then
+    echo "This script must be run as root, use sudo."
+    exit 2
+fi
+
+if [ ! -d /usr/local/etc/osd ]; then
+    mkdir -p /usr/local/etc/osd
+fi
+
+cp default_settings.cfg /usr/local/etc/osd
+
+cp osd.py /usr/local/bin
+cp init_ivad /usr/local/bin
+cp edit-ivad-init /usr/local/bin
+
+chmod +x /usr/local/bin/osd.py
+chmod +x /usr/local/bin/init_ivad
+chmod +x /usr/local/bin/edit-ivad-init
+
+# add init_ivad to /etc/rc.local
+
+# comment any lines that contain init_ivad
+
+sed  -i 's/^[^#]*init_ivad/#&/' /etc/rc.local
+
+# add line to execute after boot
+sed -i "s|^exit 0|/usr/local/bin/init_ivad\nexit 0|" /etc/rc.local
+
+chmod +x /etc/rc.local
